@@ -7,7 +7,7 @@ export const swaggerDocument = {
     contact: { name: 'GoTrip Dev Team' },
   },
   servers: [
-    { url: 'http://localhost:4000/api/v1', description: 'Local Development' },
+    { url: '/api/v1', description: 'Current host' },
   ],
   components: {
     securitySchemes: {
