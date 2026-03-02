@@ -25,12 +25,7 @@ import reviewRoutes from './reviews/review.routes';
 const app = express();
 
 // ─── Global Middleware ───────────────────────────────────
-app.use(
-  helmet({
-    crossOriginOpenerPolicy: false,
-    originAgentCluster: false,
-  })
-);
+app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.use(compression());
 app.use(morgan(config.env === 'production' ? 'combined' : 'dev'));
