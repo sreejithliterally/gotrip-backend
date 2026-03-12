@@ -1,33 +1,47 @@
 import { z } from 'zod';
 
-export const sendOtpSchema = z.object({
-  full_name: z.string().min(2).max(100).optional(),
-  email: z.string().email().optional(),
-  phone: z.string().min(10).max(15).optional(),
-  channel: z.enum(['email', 'phone']),
-}).refine(
-  (data) => {
-    if (data.channel === 'email') return !!data.email;
-    if (data.channel === 'phone') return !!data.phone;
-    return false;
-  },
-  { message: 'Email required for email channel, phone required for phone channel' },
-);
+const optionalPhone = z
+  .string()
+  .transform((v) => (v === '' ? undefined : v))
+  .pipe(z.string().min(10).max(15).optional());
 
-export const verifyOtpSchema = z.object({
-  email: z.string().email().optional(),
-  phone: z.string().min(10).max(15).optional(),
-  channel: z.enum(['email', 'phone']),
-  otp: z.string().length(4),
-  full_name: z.string().min(2).max(100).optional(), // for signup
-}).refine(
-  (data) => {
-    if (data.channel === 'email') return !!data.email;
-    if (data.channel === 'phone') return !!data.phone;
-    return false;
-  },
-  { message: 'Email required for email channel, phone required for phone channel' },
-);
+const optionalEmail = z
+  .string()
+  .transform((v) => (v === '' ? undefined : v))
+  .pipe(z.string().email().optional());
+
+export const sendOtpSchema = z
+  .discriminatedUnion('channel', [
+    z.object({
+      channel: z.literal('email'),
+      email: optionalEmail.refine((v) => !!v, { message: 'email is required when channel is email' }),
+      phone: optionalPhone,
+      full_name: z.string().min(2).max(100).optional(),
+    }),
+    z.object({
+      channel: z.literal('phone'),
+      phone: optionalPhone.refine((v) => !!v, { message: 'phone is required when channel is phone' }),
+      email: optionalEmail,
+      full_name: z.string().min(2).max(100).optional(),
+    }),
+  ]);
+
+export const verifyOtpSchema = z.discriminatedUnion('channel', [
+  z.object({
+    channel: z.literal('email'),
+    email: optionalEmail.refine((v) => !!v, { message: 'email is required when channel is email' }),
+    phone: optionalPhone,
+    otp: z.string().length(4),
+    full_name: z.string().min(2).max(100).optional(),
+  }),
+  z.object({
+    channel: z.literal('phone'),
+    phone: optionalPhone.refine((v) => !!v, { message: 'phone is required when channel is phone' }),
+    email: optionalEmail,
+    otp: z.string().length(4),
+    full_name: z.string().min(2).max(100).optional(),
+  }),
+]);
 
 export const refreshTokenSchema = z.object({
   refresh_token: z.string().min(1),
