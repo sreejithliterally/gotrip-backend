@@ -62,6 +62,14 @@ export class Listing extends Model {
   @Column(DataType.ENUM(...Object.values(ListingStatus)))
   status!: ListingStatus;
 
+  @Column({
+    type: DataType.VIRTUAL,
+    get() {
+      return 0;
+    },
+  })
+  rating!: number;
+
   @CreatedAt
   created_at!: Date;
 
