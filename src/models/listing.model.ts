@@ -58,6 +58,10 @@ export class Listing extends Model {
   @Column(DataType.INTEGER)
   max_guests!: number;
 
+  @Default(0)
+  @Column(DataType.INTEGER)
+  total_rooms!: number;
+
   @Default(ListingStatus.DRAFT)
   @Column(DataType.ENUM(...Object.values(ListingStatus)))
   status!: ListingStatus;

@@ -11,6 +11,7 @@ export const createListingSchema = z.object({
   amenities: z.array(z.string()).optional(),
   policies: z.record(z.string(), z.unknown()).optional(),
   max_guests: z.number().int().positive().optional(),
+  total_rooms: z.number().int().positive().optional(),
 });
 
 export const updateListingSchema = createListingSchema.partial().extend({

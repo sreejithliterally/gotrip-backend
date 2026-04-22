@@ -5,6 +5,7 @@ export const createBookingSchema = z.object({
   start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date format must be YYYY-MM-DD'),
   end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date format must be YYYY-MM-DD'),
   guests: z.number().int().positive().default(1),
+  rooms: z.number().int().positive().default(1),
 });
 
 export const cancelBookingSchema = z.object({

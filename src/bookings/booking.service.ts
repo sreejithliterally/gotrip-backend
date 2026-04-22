@@ -11,7 +11,7 @@ import { CreateBookingInput, SetAvailabilityInput, BulkAvailabilityInput } from 
 
 export class BookingService {
   async create(userId: string, input: CreateBookingInput) {
-    const { listing_id, start_date, end_date, guests } = input;
+    const { listing_id, start_date, end_date, guests, rooms } = input;
 
     const startDate = new Date(start_date);
     const endDate = new Date(end_date);
@@ -40,12 +40,16 @@ export class BookingService {
       for (const date of dates) {
         const avail = availMap.get(date);
         if (!avail) throw ApiError.badRequest(`No availability set for ${date}`);
-        if (avail.available_units < 1) throw ApiError.badRequest(`Fully booked on ${date}`);
-        totalAmount += Number(avail.price);
+        if (avail.available_units < rooms) {
+          throw ApiError.badRequest(
+            `Only ${avail.available_units} room(s) available on ${date}, but ${rooms} requested`,
+          );
+        }
+        totalAmount += Number(avail.price) * rooms;
       }
 
       return Booking.create(
-        { user_id: userId, listing_id, start_date, end_date, guests, total_amount: totalAmount, status: BookingStatus.PENDING },
+        { user_id: userId, listing_id, start_date, end_date, guests, rooms, total_amount: totalAmount, status: BookingStatus.PENDING },
         { transaction: t },
       );
     });
@@ -63,12 +67,17 @@ export class BookingService {
       if (booking.status !== BookingStatus.PENDING) throw ApiError.badRequest('Booking is not in pending state');
 
       const dates = this.getDateRange(booking.start_date, booking.end_date);
+      const rooms = booking.rooms ?? 1;
 
       for (const date of dates) {
         const [updated] = await Availability.update(
-          { available_units: sequelize.literal('available_units - 1') },
+          { available_units: sequelize.literal(`available_units - ${rooms}`) },
           {
-            where: { listing_id: booking.listing_id, date, available_units: sequelize.literal('available_units > 0') },
+            where: {
+              listing_id: booking.listing_id,
+              date,
+              available_units: sequelize.literal(`available_units >= ${rooms}`),
+            },
             transaction: t,
           },
         );
@@ -93,9 +102,10 @@ export class BookingService {
 
       if (booking.status === BookingStatus.CONFIRMED) {
         const dates = this.getDateRange(booking.start_date, booking.end_date);
+        const rooms = booking.rooms ?? 1;
         for (const date of dates) {
           await Availability.update(
-            { available_units: sequelize.literal('available_units + 1') },
+            { available_units: sequelize.literal(`available_units + ${rooms}`) },
             { where: { listing_id: booking.listing_id, date }, transaction: t },
           );
         }

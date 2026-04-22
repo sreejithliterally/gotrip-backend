@@ -40,6 +40,10 @@ export class Booking extends Model {
   @Column(DataType.INTEGER)
   guests!: number;
 
+  @Default(1)
+  @Column(DataType.INTEGER)
+  rooms!: number;
+
   @Column({ type: DataType.DECIMAL(12, 2), allowNull: false })
   total_amount!: number;
 

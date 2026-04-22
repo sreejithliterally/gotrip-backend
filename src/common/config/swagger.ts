@@ -131,6 +131,7 @@ export const swaggerDocument = {
           price_start: { type: 'number', example: 2500 },
           amenities: { type: 'array', items: { type: 'string' }, example: ['WiFi', 'Parking', 'Breakfast'] },
           max_guests: { type: 'integer', example: 4 },
+          total_rooms: { type: 'integer', example: 10 },
         },
       },
       Listing: {
@@ -186,7 +187,8 @@ export const swaggerDocument = {
           listing_id: { type: 'string', format: 'uuid' },
           start_date: { type: 'string', format: 'date', example: '2025-12-20' },
           end_date: { type: 'string', format: 'date', example: '2025-12-25' },
-          guests: { type: 'integer', example: 2 },
+          guests: { type: 'integer', example: 2, default: 1 },
+          rooms: { type: 'integer', example: 1, default: 1 },
         },
       },
       Booking: {
@@ -197,6 +199,7 @@ export const swaggerDocument = {
           start_date: { type: 'string', format: 'date' },
           end_date: { type: 'string', format: 'date' },
           guests: { type: 'integer' },
+          rooms: { type: 'integer' },
           total_amount: { type: 'number' },
           status: { type: 'string', enum: ['pending', 'confirmed', 'cancelled', 'completed'] },
           created_at: { type: 'string', format: 'date-time' },
@@ -473,6 +476,24 @@ export const swaggerDocument = {
         security: [{ BearerAuth: [] }],
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
         responses: { 200: { description: 'Deleted' } },
+      },
+    },
+    '/listings/{id}/publish': {
+      patch: {
+        tags: ['Listings'],
+        summary: 'Publish a listing (Vendor only)',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Listing published — now visible in public browse' } },
+      },
+    },
+    '/listings/{id}/unpublish': {
+      patch: {
+        tags: ['Listings'],
+        summary: 'Unpublish a listing back to draft (Vendor only)',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { 200: { description: 'Listing moved back to draft' } },
       },
     },
     '/listings/{id}/media': {
