@@ -62,4 +62,7 @@ export class User extends Model {
 
   @HasMany(() => require('./review.model').Review)
   reviews!: any[];
+
+  @HasMany(() => require('./wishlist.model').Wishlist)
+  wishlists!: any[];
 }

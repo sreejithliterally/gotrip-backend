@@ -24,6 +24,24 @@ export function authenticate(req: AuthenticatedRequest, _res: Response, next: Ne
 }
 
 /**
+ * Middleware: Optionally decode a JWT if present; never blocks the request.
+ * Sets req.user when a valid token is found, leaves it undefined otherwise.
+ */
+export function optionalAuthenticate(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
+  try {
+    const header = req.headers.authorization;
+    if (header && header.startsWith('Bearer ')) {
+      const token = header.split(' ')[1];
+      const payload = verifyAccessToken(token);
+      req.user = { id: payload.id, role: payload.role };
+    }
+  } catch {
+    // Invalid/expired token — treat as unauthenticated
+  }
+  next();
+}
+
+/**
  * Middleware factory: Require specific roles
  */
 export function authorize(...roles: UserRole[]) {

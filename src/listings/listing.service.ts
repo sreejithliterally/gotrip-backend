@@ -7,18 +7,22 @@ import { Review } from '../models/review.model';
 import { ApiError } from '../common/utils/api-error';
 import { ListingStatus, VendorStatus } from '../common/types';
 import { CreateListingInput, UpdateListingInput } from './listing.validator';
+import { wishlistService } from '../wishlists/wishlist.service';
 
 export class ListingService {
-  async browse(query: {
-    category_id?: string;
-    location?: string;
-    min_price?: string;
-    max_price?: string;
-    page?: string;
-    limit?: string;
-    sort_by?: string;
-    sort_order?: string;
-  }) {
+  async browse(
+    query: {
+      category_id?: string;
+      location?: string;
+      min_price?: string;
+      max_price?: string;
+      page?: string;
+      limit?: string;
+      sort_by?: string;
+      sort_order?: string;
+    },
+    userId?: string,
+  ) {
     const page = parseInt(query.page || '1');
     const limit = parseInt(query.limit || '20');
     const offset = (page - 1) * limit;
@@ -43,13 +47,26 @@ export class ListingService {
       ],
     });
 
+    let wishlistedIds = new Set<string>();
+    if (userId) {
+      wishlistedIds = await wishlistService.getWishlistedListingIds(
+        userId,
+        rows.map((l) => l.id),
+      );
+    }
+
+    const listings = rows.map((l) => ({
+      ...l.toJSON(),
+      is_wishlisted: wishlistedIds.has(l.id),
+    }));
+
     return {
-      listings: rows,
+      listings,
       meta: { page, limit, total: count, totalPages: Math.ceil(count / limit) },
     };
   }
 
-  async getById(id: string) {
+  async getById(id: string, userId?: string) {
     const listing = await Listing.findByPk(id, {
       include: [
         { model: ListingMedia, order: [['sort_order', 'ASC']] },
@@ -59,7 +76,10 @@ export class ListingService {
       ],
     });
     if (!listing) throw ApiError.notFound('Listing not found');
-    return listing;
+
+    const is_wishlisted = userId ? await wishlistService.isWishlisted(userId, id) : false;
+
+    return { ...listing.toJSON(), is_wishlisted };
   }
 
   async create(vendorUserId: string, input: CreateListingInput) {

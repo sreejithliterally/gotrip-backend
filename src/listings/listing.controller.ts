@@ -1,17 +1,17 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { listingService } from './listing.service';
 import { sendSuccess } from '../common/utils/response';
 import { AuthenticatedRequest } from '../common/types';
 
 export class ListingController {
-  // Public
-  async browse(req: Request, res: Response) {
-    const { listings, meta } = await listingService.browse(req.query as any);
+  // Public — optionally reads user from JWT if present (via optionalAuthenticate middleware)
+  async browse(req: AuthenticatedRequest, res: Response) {
+    const { listings, meta } = await listingService.browse(req.query as any, req.user?.id);
     return sendSuccess(res, listings, 'Listings fetched', 200, meta);
   }
 
-  async getById(req: Request, res: Response) {
-    const listing = await listingService.getById(String(req.params.id));
+  async getById(req: AuthenticatedRequest, res: Response) {
+    const listing = await listingService.getById(String(req.params.id), req.user?.id);
     return sendSuccess(res, listing);
   }
 

@@ -11,6 +11,7 @@ import { Availability } from '../models/availability.model';
 import { Booking } from '../models/booking.model';
 import { Payment } from '../models/payment.model';
 import { Review } from '../models/review.model';
+import { Wishlist } from '../models/wishlist.model';
 
 const isRDS = config.db.host.includes('amazonaws.com');
 
@@ -21,7 +22,7 @@ const sequelize = new Sequelize({
   database: config.db.name,
   username: config.db.user,
   password: config.db.password,
-  models: [User, Vendor, Category, Listing, ListingMedia, Availability, Booking, Payment, Review],
+  models: [User, Vendor, Category, Listing, ListingMedia, Availability, Booking, Payment, Review, Wishlist],
   logging: config.env === 'development' ? false : false, // set to console.log to see SQL
   pool: {
     max: 20,

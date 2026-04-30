@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { listingController } from './listing.controller';
-import { authenticate, authorize } from '../common/middleware/auth';
+import { authenticate, authorize, optionalAuthenticate } from '../common/middleware/auth';
 import { asyncHandler } from '../common/middleware/async-handler';
 import { validate } from '../common/utils/validate';
 import { createListingSchema, updateListingSchema } from './listing.validator';
@@ -8,9 +8,9 @@ import { UserRole } from '../common/types';
 
 const router = Router();
 
-// Public
-router.get('/', asyncHandler(listingController.browse));
-router.get('/:id', asyncHandler(listingController.getById));
+// Public — is_wishlisted flag populated when a valid JWT is present
+router.get('/', optionalAuthenticate, asyncHandler(listingController.browse as any));
+router.get('/:id', optionalAuthenticate, asyncHandler(listingController.getById as any));
 
 // Vendor
 router.post(

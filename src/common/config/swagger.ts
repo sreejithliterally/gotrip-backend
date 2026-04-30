@@ -142,6 +142,11 @@ export const swaggerDocument = {
           location: { type: 'string' },
           price_start: { type: 'number' },
           status: { type: 'string', enum: ['draft', 'published', 'archived'] },
+          is_wishlisted: {
+            type: 'boolean',
+            description: 'Populated when a valid Bearer token is sent with the request. Always false for unauthenticated calls.',
+            example: false,
+          },
           category: { $ref: '#/components/schemas/Category' },
           media: { type: 'array', items: { $ref: '#/components/schemas/ListingMedia' } },
           created_at: { type: 'string', format: 'date-time' },
@@ -220,6 +225,33 @@ export const swaggerDocument = {
           razorpay_order_id: { type: 'string', example: 'order_xxx' },
           razorpay_payment_id: { type: 'string', example: 'pay_xxx' },
           razorpay_signature: { type: 'string' },
+        },
+      },
+      // ─── Wishlist ─────────────────────────────────────────
+      WishlistToggleResponse: {
+        type: 'object',
+        properties: {
+          wishlisted: {
+            type: 'boolean',
+            description: 'true = listing was added to wishlist, false = removed',
+          },
+        },
+      },
+      WishlistItem: {
+        type: 'object',
+        description: 'A wishlist entry — listing data plus wishlist metadata',
+        properties: {
+          wishlist_id: { type: 'string', format: 'uuid' },
+          wishlisted_at: { type: 'string', format: 'date-time' },
+          is_wishlisted: { type: 'boolean', example: true },
+          id: { type: 'string', format: 'uuid' },
+          title: { type: 'string' },
+          location: { type: 'string' },
+          price_start: { type: 'number' },
+          status: { type: 'string', enum: ['draft', 'published', 'archived'] },
+          category: { $ref: '#/components/schemas/Category' },
+          media: { type: 'array', items: { $ref: '#/components/schemas/ListingMedia' } },
+          created_at: { type: 'string', format: 'date-time' },
         },
       },
       // ─── Review ───────────────────────────────────────────
@@ -423,6 +455,8 @@ export const swaggerDocument = {
       get: {
         tags: ['Listings'],
         summary: 'Browse published listings',
+        description: 'Public endpoint. Send a `Bearer` token to receive an `is_wishlisted` flag on each listing item.',
+        security: [{}],
         parameters: [
           { name: 'category_id', in: 'query', schema: { type: 'string', format: 'uuid' } },
           { name: 'location', in: 'query', schema: { type: 'string' } },
@@ -433,7 +467,24 @@ export const swaggerDocument = {
           { name: 'sort_by', in: 'query', schema: { type: 'string', enum: ['price_start', 'created_at'] } },
           { name: 'sort_order', in: 'query', schema: { type: 'string', enum: ['ASC', 'DESC'] } },
         ],
-        responses: { 200: { description: 'Paginated listings' } },
+        responses: {
+          200: {
+            description: 'Paginated listings. Each item includes `is_wishlisted` when authenticated.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    message: { type: 'string' },
+                    data: { type: 'array', items: { $ref: '#/components/schemas/Listing' } },
+                    meta: { $ref: '#/components/schemas/PaginatedMeta' },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       post: {
         tags: ['Listings'],
@@ -459,8 +510,27 @@ export const swaggerDocument = {
       get: {
         tags: ['Listings'],
         summary: 'Get listing detail',
+        description: 'Public endpoint. Send a `Bearer` token to receive the `is_wishlisted` flag on the response.',
+        security: [{}],
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
-        responses: { 200: { description: 'Listing with media, category, vendor, reviews' }, 404: { description: 'Not found' } },
+        responses: {
+          200: {
+            description: 'Listing with media, category, vendor, reviews. Includes `is_wishlisted` when authenticated.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    message: { type: 'string' },
+                    data: { $ref: '#/components/schemas/Listing' },
+                  },
+                },
+              },
+            },
+          },
+          404: { description: 'Not found' },
+        },
       },
       patch: {
         tags: ['Listings'],
@@ -617,6 +687,84 @@ export const swaggerDocument = {
         summary: 'Razorpay webhook (called by Razorpay, not your app)',
         description: 'Handles payment.captured and payment.failed events. Idempotent.',
         responses: { 200: { description: 'Webhook processed' } },
+      },
+    },
+
+    // ═══════════════════════════════════════════════════════
+    // WISHLISTS
+    // ═══════════════════════════════════════════════════════
+    '/wishlists': {
+      get: {
+        tags: ['Wishlists'],
+        summary: 'Get my wishlist',
+        description: 'Returns a paginated list of the authenticated user\'s wishlisted listings. Each item includes the listing data plus `wishlist_id`, `wishlisted_at`, and `is_wishlisted: true`.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
+        ],
+        responses: {
+          200: {
+            description: 'Paginated wishlist items',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    message: { type: 'string', example: 'Wishlist fetched' },
+                    data: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/WishlistItem' },
+                    },
+                    meta: { $ref: '#/components/schemas/PaginatedMeta' },
+                  },
+                },
+              },
+            },
+          },
+          401: { description: 'Unauthorized — Bearer token required' },
+        },
+      },
+    },
+    '/wishlists/{listingId}': {
+      post: {
+        tags: ['Wishlists'],
+        summary: 'Toggle wishlist for a listing',
+        description: 'Adds the listing to the wishlist if it is not already wishlisted; removes it if it is. Acts as a single toggle endpoint — no separate add/remove calls needed.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          {
+            name: 'listingId',
+            in: 'path',
+            required: true,
+            description: 'UUID of the listing to wishlist or un-wishlist',
+            schema: { type: 'string', format: 'uuid' },
+          },
+        ],
+        responses: {
+          200: {
+            description: '`wishlisted: true` when added, `wishlisted: false` when removed',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    message: {
+                      type: 'string',
+                      enum: ['Added to wishlist', 'Removed from wishlist'],
+                      example: 'Added to wishlist',
+                    },
+                    data: { $ref: '#/components/schemas/WishlistToggleResponse' },
+                  },
+                },
+              },
+            },
+          },
+          401: { description: 'Unauthorized — Bearer token required' },
+          404: { description: 'Listing not found or not published' },
+        },
       },
     },
 

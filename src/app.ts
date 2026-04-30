@@ -21,6 +21,7 @@ import listingRoutes from './listings/listing.routes';
 import bookingRoutes from './bookings/booking.routes';
 import paymentRoutes from './payments/payment.routes';
 import reviewRoutes from './reviews/review.routes';
+import wishlistRoutes from './wishlists/wishlist.routes';
 
 const app = express();
 
@@ -68,6 +69,7 @@ app.use(`${API_PREFIX}/listings`, listingRoutes);
 app.use(`${API_PREFIX}/bookings`, bookingRoutes);
 app.use(`${API_PREFIX}/payments`, paymentRoutes);
 app.use(`${API_PREFIX}/reviews`, reviewRoutes);
+app.use(`${API_PREFIX}/wishlists`, wishlistRoutes);
 
 // ─── 404 Handler ─────────────────────────────────────────
 app.use((_req, res) => {

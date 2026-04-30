@@ -8,3 +8,4 @@ export { Availability } from './availability.model';
 export { Booking } from './booking.model';
 export { Payment } from './payment.model';
 export { Review } from './review.model';
+export { Wishlist } from './wishlist.model';
